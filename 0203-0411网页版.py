@@ -7,8 +7,8 @@ import pandas as pd
 from io import BytesIO, StringIO
 
 # ===================== 全局配置 =====================
-# 配置中文字体（解决网页绘图中文乱码）
-plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'WenQuanYi Micro Hei', 'Heiti TC', 'SimHei']
+# 配置中文字体（使用支持中文的字体）
+plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial Unicode MS', 'Heiti TC']
 plt.rcParams['axes.unicode_minus'] = False
 st.set_page_config(page_title="血压心率监测工具", layout="wide")  # 网页宽屏显示
 
