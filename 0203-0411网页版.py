@@ -125,7 +125,7 @@ with col_import:
                     st.session_state.new_data_list.extend(new_data)
                     st.success(f"✅ 成功导入 {len(new_data)} 条数据！")
                     # 重新加载页面以显示导入的数据
-                    st.experimental_rerun()
+                    st.rerun()
                 else:
                     st.error("❌ 文件格式错误，请上传正确的CSV文件")
             else:
