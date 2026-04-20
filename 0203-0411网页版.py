@@ -190,7 +190,6 @@ if st.session_state.new_data_list:
     # 使用 data_editor 实现内联编辑和删除
     edited_df = st.data_editor(
         pd.DataFrame(st.session_state.new_data_list),
-        num_rows="dynamic",
         use_container_width=True,
         hide_index=True,
         column_config={
