@@ -124,8 +124,8 @@ with col_import:
                     new_data = df.to_dict('records')
                     st.session_state.new_data_list.extend(new_data)
                     st.success(f"✅ 成功导入 {len(new_data)} 条数据！")
-                    # 重新加载页面以显示导入的数据
-                    st.rerun()
+                    # 不再使用 st.rerun()，避免无限循环
+                    # 数据会在页面刷新时自动显示
                 else:
                     st.error("❌ 文件格式错误，请上传正确的CSV文件")
             else:
@@ -178,7 +178,8 @@ if st.button("添加本条数据", type="primary"):
                 'Heart Rate (bpm)': new_heart
             })
             st.success(f"✅ 已添加 {new_date} 的数据！")
-            st.rerun()
+            # 不再使用 st.rerun()，避免无限循环
+            # 数据会在页面刷新时自动显示
         except ValueError:
             st.error("日期格式错误！请输入 YYYY-MM-DD 格式")
 
@@ -211,7 +212,8 @@ if st.session_state.new_data_list:
     with col_clear:
         if st.button("清空所有新增数据", type="secondary"):
             st.session_state.new_data_list = []
-            st.rerun()
+            # 不再使用 st.rerun()，避免无限循环
+            # 数据会在页面刷新时自动显示
     
     # 显示当前共有多少条数据
     st.success(f"当前共有 {len(st.session_state.new_data_list)} 条新增数据")
