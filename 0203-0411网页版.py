@@ -135,7 +135,7 @@ if st.button("添加本条数据", type="primary"):
                 'Heart Rate (bpm)': new_heart
             })
             st.success(f"✅ 已添加 {new_date} 的数据！")
-            st.experimental_rerun()
+            st.rerun()
         except ValueError:
             st.error("日期格式错误！请输入 YYYY-MM-DD 格式")
 
@@ -146,7 +146,7 @@ if st.session_state.new_data_list:
     st.dataframe(new_df, width='stretch')
     if st.button("清空所有新增数据"):
         st.session_state.new_data_list = []
-        st.experimental_rerun()
+        st.rerun()
 
 # 3. 生成图表
 st.subheader("生成趋势图表")
