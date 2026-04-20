@@ -8,7 +8,7 @@ from io import BytesIO, StringIO
 
 # ===================== 全局配置 =====================
 # 配置中文字体（解决网页绘图中文乱码）
-plt.rcParams['font.sans-serif'] = ['Microsoft YaHei', 'SimHei', 'DejaVu Sans']
+plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'WenQuanYi Micro Hei', 'Heiti TC', 'SimHei']
 plt.rcParams['axes.unicode_minus'] = False
 st.set_page_config(page_title="血压心率监测工具", layout="wide")  # 网页宽屏显示
 
@@ -228,13 +228,10 @@ if st.button("🚀 生成合并数据后的趋势图", type="primary"):
         mime='image/png'
     )
     # 导出合并后的数据为CSV
-    csv_buf = StringIO()
-    combined_df['日期'] = combined_df['日期'].dt.strftime('%Y-%m-%d')
-    combined_df.to_csv(csv_buf, index=False, encoding='utf-8-sig')
-    csv_buf.seek(0)
+    csv_data = combined_df.to_csv(index=False, encoding='utf-8-sig')
     st.download_button(
         label="📥 下载合并后的数据（CSV）",
-        data=csv_buf,
+        data=csv_data,
         file_name=f'血压心率数据_{start_date.replace("年","").replace("月","").replace("日","")}-{end_date.replace("年","").replace("月","").replace("日","")}.csv',
         mime='text/csv'
     )
