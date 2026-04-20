@@ -255,10 +255,10 @@ if st.button("🚀 生成合并数据后的趋势图", type="primary"):
             plot_smooth_with_breaks(x_days, diastolic, date_objects, 'blue', 'Diastolic (mmHg)')
             plot_smooth_with_breaks(x_days, heart_rate, date_objects, 'green', 'Heart Rate (bpm)')
 
-        # 绘制数据点
-        plt.scatter(date_objects, systolic, color='red', s=50, alpha=0.8, label='Systolic Data')
-        plt.scatter(date_objects, diastolic, color='blue', s=50, alpha=0.8, label='Diastolic Data')
-        plt.scatter(date_objects, heart_rate, color='green', s=50, alpha=0.8, label='Heart Rate Data')
+        # 绘制数据点（不添加图例标签）
+        plt.scatter(date_objects, systolic, color='red', s=50, alpha=0.8)
+        plt.scatter(date_objects, diastolic, color='blue', s=50, alpha=0.8)
+        plt.scatter(date_objects, heart_rate, color='green', s=50, alpha=0.8)
 
         # 只有当数据点足够时才绘制趋势线
         if len(x_days) >= 3:
