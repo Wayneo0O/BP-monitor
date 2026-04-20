@@ -151,15 +151,21 @@ if st.session_state.new_data_list:
 # 3. 生成图表
 st.subheader("生成趋势图表")
 if st.button("生成合并数据后的趋势图", type="primary"):
+    # 合并原始数据和新增数据
     combined_df = pd.concat([original_df, pd.DataFrame(st.session_state.new_data_list)], ignore_index=True)
+    # 按日期分组，计算每天的平均值
     combined_df['Date'] = pd.to_datetime(combined_df['Date'])
+    combined_df = combined_df.groupby('Date').mean().reset_index()
+    # 按日期排序
     combined_df = combined_df.sort_values('Date').reset_index(drop=True)
 
+    # 提取合并后的数据
     dates = combined_df['Date'].dt.strftime('%Y-%m-%d').tolist()
     systolic = combined_df['Systolic (mmHg)'].tolist()
     diastolic = combined_df['Diastolic (mmHg)'].tolist()
     heart_rate = combined_df['Heart Rate (bpm)'].tolist()
 
+    # 日期处理
     date_objects = [datetime.strptime(date, '%Y-%m-%d') for date in dates]
     x_days = np.array([(d - date_objects[0]).days for d in date_objects])
 
