@@ -111,11 +111,11 @@ col1, col2, col3, col4 = st.columns(4)
 with col1:
     new_date = st.text_input("日期（格式：YYYY-MM-DD）", placeholder="例如：2026-04-12")
 with col2:
-    new_systolic = st.number_input("收缩压 (mmHg)", min_value=0, step=0.5, placeholder="例如：118")
+    new_systolic = st.number_input("收缩压 (mmHg)", min_value=0.0, step=0.5, placeholder="例如：118")
 with col3:
-    new_diastolic = st.number_input("舒张压 (mmHg)", min_value=0, step=0.5, placeholder="例如：73")
+    new_diastolic = st.number_input("舒张压 (mmHg)", min_value=0.0, step=0.5, placeholder="例如：73")
 with col4:
-    new_heart = st.number_input("心率 (次/分)", min_value=0, step=0.5, placeholder="例如：98")
+    new_heart = st.number_input("心率 (次/分)", min_value=0.0, step=0.5, placeholder="例如：98")
 
 # 初始化会话状态（保存新增数据，避免刷新丢失）
 if 'new_data_list' not in st.session_state:
