@@ -99,11 +99,57 @@ def plot_smooth_with_breaks(x_days, y_vals, date_objects, color, label):
 st.title("血压与心率变化监测工具")
 st.divider()
 
-# 1. 展示原始数据
+# 初始化会话状态
+if 'new_data_list' not in st.session_state:
+    st.session_state.new_data_list = []
+
+# 1. 数据导入/导出功能
+st.subheader("💾 数据持久化")
+col_import, col_export = st.columns(2)
+
+with col_import:
+    uploaded_file = st.file_uploader("上传之前保存的新增数据（CSV格式）", type="csv")
+    if uploaded_file is not None:
+        try:
+            df = pd.read_csv(uploaded_file)
+            if not df.empty:
+                # 验证数据格式
+                required_columns = ['Date', 'Systolic (mmHg)', 'Diastolic (mmHg)', 'Heart Rate (bpm)']
+                if all(col in df.columns for col in required_columns):
+                    # 转换数据类型
+                    df['Systolic (mmHg)'] = df['Systolic (mmHg)'].astype(float)
+                    df['Diastolic (mmHg)'] = df['Diastolic (mmHg)'].astype(float)
+                    df['Heart Rate (bpm)'] = df['Heart Rate (bpm)'].astype(float)
+                    # 合并数据
+                    new_data = df.to_dict('records')
+                    st.session_state.new_data_list.extend(new_data)
+                    st.success(f"✅ 成功导入 {len(new_data)} 条数据！")
+                    st.rerun()
+                else:
+                    st.error("❌ 文件格式错误，请上传正确的CSV文件")
+            else:
+                st.error("❌ 上传的文件为空")
+        except Exception as e:
+            st.error(f"❌ 导入失败：{str(e)}")
+
+with col_export:
+    if st.session_state.new_data_list:
+        export_df = pd.DataFrame(st.session_state.new_data_list)
+        csv_data = export_df.to_csv(index=False, encoding='utf-8-sig')
+        st.download_button(
+            label="📥 下载新增数据（CSV格式）",
+            data=csv_data,
+            file_name=f'新增血压数据_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv',
+            mime='text/csv'
+        )
+    else:
+        st.info("暂无数据可导出")
+
+# 2. 展示原始数据
 st.subheader("原始数据（2026-02-03 至 2026-04-11）")
 st.dataframe(original_df, width='stretch')
 
-# 2. 新增数据输入区域
+# 3. 新增数据输入区域
 st.subheader("新增血压/心率数据")
 col1, col2, col3, col4 = st.columns(4)
 with col1:
@@ -114,10 +160,6 @@ with col3:
     new_diastolic = st.number_input("舒张压 (mmHg)", min_value=0.0, step=0.5, value=0.0)
 with col4:
     new_heart = st.number_input("心率 (次/分)", min_value=0.0, step=0.5, value=0.0)
-
-# 初始化会话状态
-if 'new_data_list' not in st.session_state:
-    st.session_state.new_data_list = []
 
 # 新增数据添加按钮
 if st.button("添加本条数据", type="primary"):
@@ -139,7 +181,7 @@ if st.button("添加本条数据", type="primary"):
         except ValueError:
             st.error("日期格式错误！请输入 YYYY-MM-DD 格式")
 
-# 展示已添加的新增数据（可编辑/删除）
+# 4. 展示已添加的新增数据（可编辑/删除）
 if st.session_state.new_data_list:
     st.subheader("已添加的新增数据（可直接删除单条）")
     st.info("💡 使用下方的表格可以直接删除单条数据，或清空所有新增数据")
@@ -174,7 +216,7 @@ if st.session_state.new_data_list:
 else:
     st.info("暂无新增数据，请在上方添加")
 
-# 3. 生成图表
+# 5. 生成图表
 st.subheader("生成趋势图表")
 if st.button("生成合并数据后的趋势图", type="primary"):
     # 合并原始数据和新增数据
