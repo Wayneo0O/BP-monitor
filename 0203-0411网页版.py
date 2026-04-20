@@ -191,7 +191,7 @@ if st.session_state.new_data_list:
     # 使用 data_editor 实现内联编辑和删除
     edited_df = st.data_editor(
         pd.DataFrame(st.session_state.new_data_list),
-        use_container_width=True,
+        width='stretch',
         hide_index=True,
         column_config={
             "Date": st.column_config.TextColumn("日期", width="medium"),
@@ -202,8 +202,8 @@ if st.session_state.new_data_list:
     )
     
     # 自动保存：将编辑后的数据更新到 session_state
-    # 只有当用户实际编辑了数据时才更新
-    if len(edited_df) > 0:
+    # 只有当编辑后的数据不为空时才更新
+    if not edited_df.empty:
         st.session_state.new_data_list = edited_df.to_dict('records')
     
     col_del, col_clear = st.columns(2)
@@ -226,73 +226,88 @@ st.info("💡 无论通过手动添加还是导入数据，点击下方按钮即
 if st.button("🚀 生成合并数据后的趋势图", type="primary"):
     # 合并原始数据和新增数据
     combined_df = pd.concat([original_df, pd.DataFrame(st.session_state.new_data_list)], ignore_index=True)
-    # 按日期分组，计算每天的平均值
-    combined_df['Date'] = pd.to_datetime(combined_df['Date'])
-    combined_df = combined_df.groupby('Date').mean().reset_index()
-    # 按日期排序
-    combined_df = combined_df.sort_values('Date').reset_index(drop=True)
+    
+    # 检查是否有数据
+    if combined_df.empty:
+        st.error("❌ 没有数据可生成图表")
+    else:
+        # 按日期分组，计算每天的平均值
+        combined_df['Date'] = pd.to_datetime(combined_df['Date'])
+        combined_df = combined_df.groupby('Date').mean().reset_index()
+        # 按日期排序
+        combined_df = combined_df.sort_values('Date').reset_index(drop=True)
 
-    # 提取合并后的数据
-    dates = combined_df['Date'].dt.strftime('%Y-%m-%d').tolist()
-    systolic = combined_df['Systolic (mmHg)'].tolist()
-    diastolic = combined_df['Diastolic (mmHg)'].tolist()
-    heart_rate = combined_df['Heart Rate (bpm)'].tolist()
+        # 提取合并后的数据
+        dates = combined_df['Date'].dt.strftime('%Y-%m-%d').tolist()
+        systolic = combined_df['Systolic (mmHg)'].tolist()
+        diastolic = combined_df['Diastolic (mmHg)'].tolist()
+        heart_rate = combined_df['Heart Rate (bpm)'].tolist()
 
-    # 日期处理
-    date_objects = [datetime.strptime(date, '%Y-%m-%d') for date in dates]
-    x_days = np.array([(d - date_objects[0]).days for d in date_objects])
+        # 日期处理
+        date_objects = [datetime.strptime(date, '%Y-%m-%d') for date in dates]
+        x_days = np.array([(d - date_objects[0]).days for d in date_objects])
 
-    plt.figure(figsize=(28, 10), dpi=300)
-    plot_smooth_with_breaks(x_days, systolic, date_objects, 'red', 'Systolic (mmHg)')
-    plot_smooth_with_breaks(x_days, diastolic, date_objects, 'blue', 'Diastolic (mmHg)')
-    plot_smooth_with_breaks(x_days, heart_rate, date_objects, 'green', 'Heart Rate (bpm)')
+        plt.figure(figsize=(28, 10), dpi=300)
+        
+        # 只有当数据点足够时才绘制平滑曲线
+        if len(x_days) >= 2:
+            plot_smooth_with_breaks(x_days, systolic, date_objects, 'red', 'Systolic (mmHg)')
+            plot_smooth_with_breaks(x_days, diastolic, date_objects, 'blue', 'Diastolic (mmHg)')
+            plot_smooth_with_breaks(x_days, heart_rate, date_objects, 'green', 'Heart Rate (bpm)')
 
-    coeff_s = np.polyfit(x_days, systolic, 3)
-    trend_s = np.poly1d(coeff_s)(x_days)
-    plt.plot(date_objects, trend_s, color='red', linestyle='--', linewidth=2, alpha=0.9, label='Systolic Trend')
+        # 绘制数据点
+        plt.scatter(date_objects, systolic, color='red', s=50, alpha=0.8, label='Systolic Data')
+        plt.scatter(date_objects, diastolic, color='blue', s=50, alpha=0.8, label='Diastolic Data')
+        plt.scatter(date_objects, heart_rate, color='green', s=50, alpha=0.8, label='Heart Rate Data')
 
-    coeff_d = np.polyfit(x_days, diastolic, 3)
-    trend_d = np.poly1d(coeff_d)(x_days)
-    plt.plot(date_objects, trend_d, color='blue', linestyle='--', linewidth=2, alpha=0.9, label='Diastolic Trend')
+        # 只有当数据点足够时才绘制趋势线
+        if len(x_days) >= 3:
+            coeff_s = np.polyfit(x_days, systolic, 3)
+            trend_s = np.poly1d(coeff_s)(x_days)
+            plt.plot(date_objects, trend_s, color='red', linestyle='--', linewidth=2, alpha=0.9, label='Systolic Trend')
 
-    coeff_h = np.polyfit(x_days, heart_rate, 3)
-    trend_h = np.poly1d(coeff_h)(x_days)
-    plt.plot(date_objects, trend_h, color='green', linestyle='--', linewidth=2, alpha=0.9, label='Heart Rate Trend')
+            coeff_d = np.polyfit(x_days, diastolic, 3)
+            trend_d = np.poly1d(coeff_d)(x_days)
+            plt.plot(date_objects, trend_d, color='blue', linestyle='--', linewidth=2, alpha=0.9, label='Diastolic Trend')
 
-    for i, (x, y) in enumerate(zip(date_objects, systolic)):
-        plt.annotate(f'{y:.1f}', (x, y), xytext=(0, 8), textcoords="offset points", ha='center', fontsize=7, color='red')
-    for i, (x, y) in enumerate(zip(date_objects, diastolic)):
-        plt.annotate(f'{y:.1f}', (x, y), xytext=(0, -12), textcoords="offset points", ha='center', fontsize=7, color='blue')
-    for i, (x, y) in enumerate(zip(date_objects, heart_rate)):
-        plt.annotate(f'{y:.1f}', (x, y), xytext=(8, 0), textcoords="offset points", ha='left', fontsize=7, color='green')
+            coeff_h = np.polyfit(x_days, heart_rate, 3)
+            trend_h = np.poly1d(coeff_h)(x_days)
+            plt.plot(date_objects, trend_h, color='green', linestyle='--', linewidth=2, alpha=0.9, label='Heart Rate Trend')
 
-    start_date = date_objects[0].strftime('%Y-%m-%d')
-    end_date = date_objects[-1].strftime('%Y-%m-%d')
-    plt.title(f'Blood Pressure & Heart Rate ({start_date} to {end_date})', fontsize=18, pad=20)
-    plt.xlabel('Date', fontsize=14)
-    plt.ylabel('Value', fontsize=14)
-    plt.xticks(date_objects, [d.strftime('%Y-%m-%d') for d in date_objects], rotation=70, fontsize=8, ha='right')
-    plt.legend(fontsize=13)
-    plt.grid(True, linestyle='--', alpha=0.6)
-    plt.tight_layout()
+        for i, (x, y) in enumerate(zip(date_objects, systolic)):
+            plt.annotate(f'{y:.1f}', (x, y), xytext=(0, 8), textcoords="offset points", ha='center', fontsize=7, color='red')
+        for i, (x, y) in enumerate(zip(date_objects, diastolic)):
+            plt.annotate(f'{y:.1f}', (x, y), xytext=(0, -12), textcoords="offset points", ha='center', fontsize=7, color='blue')
+        for i, (x, y) in enumerate(zip(date_objects, heart_rate)):
+            plt.annotate(f'{y:.1f}', (x, y), xytext=(8, 0), textcoords="offset points", ha='left', fontsize=7, color='green')
 
-    st.pyplot(plt)
+        start_date = date_objects[0].strftime('%Y-%m-%d')
+        end_date = date_objects[-1].strftime('%Y-%m-%d')
+        plt.title(f'Blood Pressure & Heart Rate ({start_date} to {end_date})', fontsize=18, pad=20)
+        plt.xlabel('Date', fontsize=14)
+        plt.ylabel('Value', fontsize=14)
+        plt.xticks(date_objects, [d.strftime('%Y-%m-%d') for d in date_objects], rotation=70, fontsize=8, ha='right')
+        plt.legend(fontsize=13)
+        plt.grid(True, linestyle='--', alpha=0.6)
+        plt.tight_layout()
 
-    st.subheader("💾 导出图表/数据")
-    buf = BytesIO()
-    plt.savefig(buf, format='png', dpi=300, bbox_inches='tight', facecolor='white')
-    buf.seek(0)
-    st.download_button(
-        label="📥 下载高清图表（PNG）",
-        data=buf,
-        file_name=f'bp_hr_chart_{start_date}-{end_date}.png',
-        mime='image/png'
-    )
+        st.pyplot(plt)
 
-    csv_data = combined_df.to_csv(index=False, encoding='utf-8-sig')
-    st.download_button(
-        label="📥 下载合并后的数据（CSV）",
-        data=csv_data,
-        file_name=f'bp_hr_data_{start_date}-{end_date}.csv',
-        mime='text/csv'
-    )
+        st.subheader("💾 导出图表/数据")
+        buf = BytesIO()
+        plt.savefig(buf, format='png', dpi=300, bbox_inches='tight', facecolor='white')
+        buf.seek(0)
+        st.download_button(
+            label="📥 下载高清图表（PNG）",
+            data=buf,
+            file_name=f'bp_hr_chart_{start_date}-{end_date}.png',
+            mime='image/png'
+        )
+
+        csv_data = combined_df.to_csv(index=False, encoding='utf-8-sig')
+        st.download_button(
+            label="📥 下载合并后的数据（CSV）",
+            data=csv_data,
+            file_name=f'bp_hr_data_{start_date}-{end_date}.csv',
+            mime='text/csv'
+        )
