@@ -242,6 +242,9 @@ if st.button("🚀 生成合并数据后的趋势图", type="primary"):
         systolic = combined_df['Systolic (mmHg)'].tolist()
         diastolic = combined_df['Diastolic (mmHg)'].tolist()
         heart_rate = combined_df['Heart Rate (bpm)'].tolist()
+        
+        # 计算脉压差（收缩压 - 舒张压）
+        pulse_pressure = [s - d for s, d in zip(systolic, diastolic)]
 
         # 日期处理
         date_objects = [datetime.strptime(date, '%Y-%m-%d') for date in dates]
@@ -254,11 +257,13 @@ if st.button("🚀 生成合并数据后的趋势图", type="primary"):
             plot_smooth_with_breaks(x_days, systolic, date_objects, 'red', 'Systolic (mmHg)')
             plot_smooth_with_breaks(x_days, diastolic, date_objects, 'blue', 'Diastolic (mmHg)')
             plot_smooth_with_breaks(x_days, heart_rate, date_objects, 'green', 'Heart Rate (bpm)')
+            plot_smooth_with_breaks(x_days, pulse_pressure, date_objects, 'purple', 'Pulse Pressure (mmHg)')
 
         # 绘制数据点（不添加图例标签）
         plt.scatter(date_objects, systolic, color='red', s=30, alpha=1.0, edgecolor='white', linewidth=1)
         plt.scatter(date_objects, diastolic, color='blue', s=30, alpha=1.0, edgecolor='white', linewidth=1)
         plt.scatter(date_objects, heart_rate, color='green', s=30, alpha=1.0, edgecolor='white', linewidth=1)
+        plt.scatter(date_objects, pulse_pressure, color='purple', s=30, alpha=1.0, edgecolor='white', linewidth=1)
 
         # 只有当数据点足够时才绘制趋势线
         if len(x_days) >= 3:
@@ -280,6 +285,8 @@ if st.button("🚀 生成合并数据后的趋势图", type="primary"):
             plt.annotate(f'{y:.1f}', (x, y), xytext=(0, -12), textcoords="offset points", ha='center', fontsize=7, color='blue')
         for i, (x, y) in enumerate(zip(date_objects, heart_rate)):
             plt.annotate(f'{y:.1f}', (x, y), xytext=(8, 0), textcoords="offset points", ha='left', fontsize=7, color='green')
+        for i, (x, y) in enumerate(zip(date_objects, pulse_pressure)):
+            plt.annotate(f'{y:.1f}', (x, y), xytext=(0, 15), textcoords="offset points", ha='center', fontsize=7, color='purple')
 
         start_date = date_objects[0].strftime('%Y-%m-%d')
         end_date = date_objects[-1].strftime('%Y-%m-%d')
