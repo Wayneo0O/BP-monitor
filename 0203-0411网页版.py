@@ -96,35 +96,35 @@ def plot_smooth_with_breaks(x_days, y_vals, date_objects, color, label):
     plt.scatter(date_objects, y_vals, color=color, marker=marker, s=30, zorder=5, label=label)
 
 # ===================== 网页界面构建 =====================
-st.title("Blood Pressure & Heart Rate Monitor")
+st.title("血压与心率变化监测工具")
 st.divider()
 
 # 1. 展示原始数据
-st.subheader("Original Data (2026-02-03 to 2026-04-11)")
+st.subheader("原始数据（2026-02-03 至 2026-04-11）")
 st.dataframe(original_df, width='stretch')
 
 # 2. 新增数据输入区域
-st.subheader("Add New Data")
+st.subheader("新增血压/心率数据")
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    new_date = st.text_input("Date (YYYY-MM-DD)", placeholder="e.g., 2026-04-12")
+    new_date = st.text_input("日期（YYYY-MM-DD）", placeholder="例如：2026-04-12")
 with col2:
-    new_systolic = st.number_input("Systolic (mmHg)", min_value=0.0, step=0.5, value=0.0)
+    new_systolic = st.number_input("收缩压 (mmHg)", min_value=0.0, step=0.5, value=0.0)
 with col3:
-    new_diastolic = st.number_input("Diastolic (mmHg)", min_value=0.0, step=0.5, value=0.0)
+    new_diastolic = st.number_input("舒张压 (mmHg)", min_value=0.0, step=0.5, value=0.0)
 with col4:
-    new_heart = st.number_input("Heart Rate (bpm)", min_value=0.0, step=0.5, value=0.0)
+    new_heart = st.number_input("心率 (次/分)", min_value=0.0, step=0.5, value=0.0)
 
 # 初始化会话状态
 if 'new_data_list' not in st.session_state:
     st.session_state.new_data_list = []
 
 # 新增数据添加按钮
-if st.button("Add This Data", type="primary"):
+if st.button("添加本条数据", type="primary"):
     if not new_date:
-        st.error("Please enter a date (YYYY-MM-DD)!")
+        st.error("请输入日期（格式：YYYY-MM-DD）！")
     elif new_systolic == 0 or new_diastolic == 0 or new_heart == 0:
-        st.error("All fields must be greater than 0!")
+        st.error("收缩压/舒张压/心率不能为空（请输入大于0的数值）！")
     else:
         try:
             datetime.strptime(new_date, '%Y-%m-%d')
@@ -134,23 +134,23 @@ if st.button("Add This Data", type="primary"):
                 'Diastolic (mmHg)': new_diastolic,
                 'Heart Rate (bpm)': new_heart
             })
-            st.success(f"Data for {new_date} added!")
+            st.success(f"✅ 已添加 {new_date} 的数据！")
             st.experimental_rerun()
         except ValueError:
-            st.error("Invalid date format! Use YYYY-MM-DD")
+            st.error("日期格式错误！请输入 YYYY-MM-DD 格式")
 
 # 展示已添加的新增数据
 if st.session_state.new_data_list:
-    st.subheader("New Data Added")
+    st.subheader("已添加的新增数据")
     new_df = pd.DataFrame(st.session_state.new_data_list)
     st.dataframe(new_df, width='stretch')
-    if st.button("Clear All"):
+    if st.button("清空所有新增数据"):
         st.session_state.new_data_list = []
         st.experimental_rerun()
 
 # 3. 生成图表
-st.subheader("Generate Trend Chart")
-if st.button("Generate Chart", type="primary"):
+st.subheader("生成趋势图表")
+if st.button("生成合并数据后的趋势图", type="primary"):
     combined_df = pd.concat([original_df, pd.DataFrame(st.session_state.new_data_list)], ignore_index=True)
     combined_df['Date'] = pd.to_datetime(combined_df['Date'])
     combined_df = combined_df.sort_values('Date').reset_index(drop=True)
@@ -199,12 +199,12 @@ if st.button("Generate Chart", type="primary"):
 
     st.pyplot(plt)
 
-    st.subheader("Export Data")
+    st.subheader("导出图表/数据")
     buf = BytesIO()
     plt.savefig(buf, format='png', dpi=300, bbox_inches='tight', facecolor='white')
     buf.seek(0)
     st.download_button(
-        label="Download Chart (PNG)",
+        label="下载高清图表（PNG）",
         data=buf,
         file_name=f'bp_hr_chart_{start_date}-{end_date}.png',
         mime='image/png'
@@ -212,7 +212,7 @@ if st.button("Generate Chart", type="primary"):
 
     csv_data = combined_df.to_csv(index=False, encoding='utf-8-sig')
     st.download_button(
-        label="Download Data (CSV)",
+        label="下载合并后的数据（CSV）",
         data=csv_data,
         file_name=f'bp_hr_data_{start_date}-{end_date}.csv',
         mime='text/csv'
