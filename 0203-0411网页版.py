@@ -217,8 +217,9 @@ else:
     st.info("暂无新增数据，请在上方添加")
 
 # 5. 生成图表
-st.subheader("生成趋势图表")
-if st.button("生成合并数据后的趋势图", type="primary"):
+st.subheader("📊 生成趋势图表")
+st.info("💡 无论通过手动添加还是导入数据，点击下方按钮即可生成包含所有数据的趋势图")
+if st.button("🚀 生成合并数据后的趋势图", type="primary"):
     # 合并原始数据和新增数据
     combined_df = pd.concat([original_df, pd.DataFrame(st.session_state.new_data_list)], ignore_index=True)
     # 按日期分组，计算每天的平均值
@@ -273,12 +274,12 @@ if st.button("生成合并数据后的趋势图", type="primary"):
 
     st.pyplot(plt)
 
-    st.subheader("导出图表/数据")
+    st.subheader("💾 导出图表/数据")
     buf = BytesIO()
     plt.savefig(buf, format='png', dpi=300, bbox_inches='tight', facecolor='white')
     buf.seek(0)
     st.download_button(
-        label="下载高清图表（PNG）",
+        label="📥 下载高清图表（PNG）",
         data=buf,
         file_name=f'bp_hr_chart_{start_date}-{end_date}.png',
         mime='image/png'
@@ -286,7 +287,7 @@ if st.button("生成合并数据后的趋势图", type="primary"):
 
     csv_data = combined_df.to_csv(index=False, encoding='utf-8-sig')
     st.download_button(
-        label="下载合并后的数据（CSV）",
+        label="📥 下载合并后的数据（CSV）",
         data=csv_data,
         file_name=f'bp_hr_data_{start_date}-{end_date}.csv',
         mime='text/csv'
