@@ -139,14 +139,40 @@ if st.button("添加本条数据", type="primary"):
         except ValueError:
             st.error("日期格式错误！请输入 YYYY-MM-DD 格式")
 
-# 展示已添加的新增数据
+# 展示已添加的新增数据（可编辑/删除）
 if st.session_state.new_data_list:
-    st.subheader("已添加的新增数据")
-    new_df = pd.DataFrame(st.session_state.new_data_list)
-    st.dataframe(new_df, width='stretch')
-    if st.button("清空所有新增数据"):
-        st.session_state.new_data_list = []
-        st.rerun()
+    st.subheader("已添加的新增数据（可直接删除单条）")
+    st.info("💡 使用下方的表格可以直接删除单条数据，或清空所有新增数据")
+    
+    # 使用 data_editor 实现内联编辑和删除
+    edited_df = st.data_editor(
+        pd.DataFrame(st.session_state.new_data_list),
+        num_rows="dynamic",
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Date": st.column_config.TextColumn("日期", width="medium"),
+            "Systolic (mmHg)": st.column_config.NumberColumn("收缩压 (mmHg)", width="small"),
+            "Diastolic (mmHg)": st.column_config.NumberColumn("舒张压 (mmHg)", width="small"),
+            "Heart Rate (bpm)": st.column_config.NumberColumn("心率 (次/分)", width="small"),
+        }
+    )
+    
+    # 自动保存：将编辑后的数据更新到 session_state
+    st.session_state.new_data_list = edited_df.to_dict('records')
+    
+    col_del, col_clear = st.columns(2)
+    with col_del:
+        pass
+    with col_clear:
+        if st.button("清空所有新增数据", type="secondary"):
+            st.session_state.new_data_list = []
+            st.rerun()
+    
+    # 显示当前共有多少条数据
+    st.success(f"当前共有 {len(st.session_state.new_data_list)} 条新增数据")
+else:
+    st.info("暂无新增数据，请在上方添加")
 
 # 3. 生成图表
 st.subheader("生成趋势图表")
