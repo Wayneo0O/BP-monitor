@@ -7,13 +7,11 @@ import pandas as pd
 from io import BytesIO, StringIO
 
 # ===================== 全局配置 =====================
-# 配置中文字体（使用支持中文的字体）
-plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial Unicode MS', 'Heiti TC']
+plt.rcParams['font.sans-serif'] = ['DejaVu Sans']
 plt.rcParams['axes.unicode_minus'] = False
-st.set_page_config(page_title="血压心率监测工具", layout="wide")  # 网页宽屏显示
+st.set_page_config(page_title="Blood Pressure Monitor", layout="wide")
 
 # ===================== 原始数据初始化 =====================
-# 原始日期、收缩压、舒张压、心率数据（完全复用你的数据）
 original_dates = [
     '2026-02-03', '2026-02-04', '2026-02-05', '2026-02-06', '2026-02-07',
     '2026-02-08', '2026-02-09', '2026-02-10', '2026-02-11', '2026-02-12',
@@ -54,15 +52,15 @@ original_heart_rate = [
     88, 87, 81.5, 91, 94, 82, 93, 119.5, 106, 107.5, 110.3, 102
 ]
 
-# 原始数据转DataFrame（方便展示和合并）
+# 原始数据转DataFrame
 original_df = pd.DataFrame({
-    '日期': original_dates,
-    '收缩压(mmHg)': original_systolic,
-    '舒张压(mmHg)': original_diastolic,
-    '心率(次/分)': original_heart_rate
+    'Date': original_dates,
+    'Systolic (mmHg)': original_systolic,
+    'Diastolic (mmHg)': original_diastolic,
+    'Heart Rate (bpm)': original_heart_rate
 })
 
-# ===================== 核心绘图函数（完全复用你的逻辑） =====================
+# ===================== 核心绘图函数 =====================
 def plot_smooth_with_breaks(x_days, y_vals, date_objects, color, label):
     continuous_segments = []
     break_points = []
@@ -78,7 +76,7 @@ def plot_smooth_with_breaks(x_days, y_vals, date_objects, color, label):
             })
             start_idx = i
     continuous_segments.append((start_idx, len(x_days)))
-    
+
     for (s_idx, e_idx) in continuous_segments:
         if e_idx - s_idx < 2:
             continue
@@ -89,149 +87,133 @@ def plot_smooth_with_breaks(x_days, y_vals, date_objects, color, label):
         y_smooth = f_smooth(x_smooth)
         date_smooth = [date_objects[0] + timedelta(days=x) for x in x_smooth]
         plt.plot(date_smooth, y_smooth, color=color, linewidth=2, antialiased=True)
-    
+
     for bp in break_points:
         plt.plot([bp['date_start'], bp['date_end']], [bp['y_start'], bp['y_end']],
                  color=color, linestyle='--', linewidth=1.5, alpha=0.7)
-    
-    marker = 'o' if '收缩压' in label else ('s' if '舒张压' in label else '^')
+
+    marker = 'o' if 'Systolic' in label else ('s' if 'Diastolic' in label else '^')
     plt.scatter(date_objects, y_vals, color=color, marker=marker, s=30, zorder=5, label=label)
 
 # ===================== 网页界面构建 =====================
-st.title("血压与心率变化监测工具")
+st.title("Blood Pressure & Heart Rate Monitor")
 st.divider()
 
 # 1. 展示原始数据
-st.subheader("📊 原始数据（2026-02-03 至 2026-04-11）")
+st.subheader("Original Data (2026-02-03 to 2026-04-11)")
 st.dataframe(original_df, width='stretch')
 
 # 2. 新增数据输入区域
-st.subheader("✏️ 新增血压/心率数据")
+st.subheader("Add New Data")
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    new_date = st.text_input("日期（格式：YYYY-MM-DD）", placeholder="例如：2026-04-12")
+    new_date = st.text_input("Date (YYYY-MM-DD)", placeholder="e.g., 2026-04-12")
 with col2:
-    new_systolic = st.number_input("收缩压 (mmHg)", min_value=0.0, step=0.5, value=0.0)
+    new_systolic = st.number_input("Systolic (mmHg)", min_value=0.0, step=0.5, value=0.0)
 with col3:
-    new_diastolic = st.number_input("舒张压 (mmHg)", min_value=0.0, step=0.5, value=0.0)
+    new_diastolic = st.number_input("Diastolic (mmHg)", min_value=0.0, step=0.5, value=0.0)
 with col4:
-    new_heart = st.number_input("心率 (次/分)", min_value=0.0, step=0.5, value=0.0)
+    new_heart = st.number_input("Heart Rate (bpm)", min_value=0.0, step=0.5, value=0.0)
 
-# 初始化会话状态（保存新增数据，避免刷新丢失）
+# 初始化会话状态
 if 'new_data_list' not in st.session_state:
     st.session_state.new_data_list = []
 
 # 新增数据添加按钮
-if st.button("➕ 添加本条数据", type="primary"):
-    # 基础校验
+if st.button("Add This Data", type="primary"):
     if not new_date:
-        st.error("请输入日期（格式：YYYY-MM-DD）！")
+        st.error("Please enter a date (YYYY-MM-DD)!")
     elif new_systolic == 0 or new_diastolic == 0 or new_heart == 0:
-        st.error("收缩压/舒张压/心率不能为空（请输入大于0的数值）！")
+        st.error("All fields must be greater than 0!")
     else:
-        # 校验日期格式
         try:
             datetime.strptime(new_date, '%Y-%m-%d')
-            # 添加数据到会话状态
             st.session_state.new_data_list.append({
-                '日期': new_date,
-                '收缩压(mmHg)': new_systolic,
-                '舒张压(mmHg)': new_diastolic,
-                '心率(次/分)': new_heart
+                'Date': new_date,
+                'Systolic (mmHg)': new_systolic,
+                'Diastolic (mmHg)': new_diastolic,
+                'Heart Rate (bpm)': new_heart
             })
-            st.success(f"✅ 已添加 {new_date} 的数据！")
-            # 清空输入框（通过刷新组件值）
+            st.success(f"Data for {new_date} added!")
             st.experimental_rerun()
         except ValueError:
-            st.error("日期格式错误！请输入 YYYY-MM-DD 格式（例如：2026-04-12）")
+            st.error("Invalid date format! Use YYYY-MM-DD")
 
 # 展示已添加的新增数据
 if st.session_state.new_data_list:
-    st.subheader("📝 已添加的新增数据")
+    st.subheader("New Data Added")
     new_df = pd.DataFrame(st.session_state.new_data_list)
     st.dataframe(new_df, width='stretch')
-    # 清空新增数据按钮
-    if st.button("🗑️ 清空所有新增数据"):
+    if st.button("Clear All"):
         st.session_state.new_data_list = []
         st.experimental_rerun()
 
 # 3. 生成图表
-st.subheader("🎨 生成趋势图表")
-if st.button("🚀 生成合并数据后的趋势图", type="primary"):
-    # 合并原始数据和新增数据
+st.subheader("Generate Trend Chart")
+if st.button("Generate Chart", type="primary"):
     combined_df = pd.concat([original_df, pd.DataFrame(st.session_state.new_data_list)], ignore_index=True)
-    # 按日期排序（关键：避免日期乱序导致绘图错误）
-    combined_df['日期'] = pd.to_datetime(combined_df['日期'])
-    combined_df = combined_df.sort_values('日期').reset_index(drop=True)
-    
-    # 提取合并后的数据
-    dates = combined_df['日期'].dt.strftime('%Y-%m-%d').tolist()
-    systolic = combined_df['收缩压(mmHg)'].tolist()
-    diastolic = combined_df['舒张压(mmHg)'].tolist()
-    heart_rate = combined_df['心率(次/分)'].tolist()
-    
-    # 日期处理（和原代码一致）
+    combined_df['Date'] = pd.to_datetime(combined_df['Date'])
+    combined_df = combined_df.sort_values('Date').reset_index(drop=True)
+
+    dates = combined_df['Date'].dt.strftime('%Y-%m-%d').tolist()
+    systolic = combined_df['Systolic (mmHg)'].tolist()
+    diastolic = combined_df['Diastolic (mmHg)'].tolist()
+    heart_rate = combined_df['Heart Rate (bpm)'].tolist()
+
     date_objects = [datetime.strptime(date, '%Y-%m-%d') for date in dates]
     x_days = np.array([(d - date_objects[0]).days for d in date_objects])
-    
-    # 绘制高清图表（和原代码一致）
+
     plt.figure(figsize=(28, 10), dpi=300)
-    # 绘制三条曲线
-    plot_smooth_with_breaks(x_days, systolic, date_objects, 'red', '收缩压 (mmHg)')
-    plot_smooth_with_breaks(x_days, diastolic, date_objects, 'blue', '舒张压 (mmHg)')
-    plot_smooth_with_breaks(x_days, heart_rate, date_objects, 'green', '心率 (次/分)')
-    # 绘制趋势线（3次多项式）
+    plot_smooth_with_breaks(x_days, systolic, date_objects, 'red', 'Systolic (mmHg)')
+    plot_smooth_with_breaks(x_days, diastolic, date_objects, 'blue', 'Diastolic (mmHg)')
+    plot_smooth_with_breaks(x_days, heart_rate, date_objects, 'green', 'Heart Rate (bpm)')
+
     coeff_s = np.polyfit(x_days, systolic, 3)
     trend_s = np.poly1d(coeff_s)(x_days)
-    plt.plot(date_objects, trend_s, color='red', linestyle='--', linewidth=2, alpha=0.9, label='收缩压趋势线')
-    
+    plt.plot(date_objects, trend_s, color='red', linestyle='--', linewidth=2, alpha=0.9, label='Systolic Trend')
+
     coeff_d = np.polyfit(x_days, diastolic, 3)
     trend_d = np.poly1d(coeff_d)(x_days)
-    plt.plot(date_objects, trend_d, color='blue', linestyle='--', linewidth=2, alpha=0.9, label='舒张压趋势线')
-    
+    plt.plot(date_objects, trend_d, color='blue', linestyle='--', linewidth=2, alpha=0.9, label='Diastolic Trend')
+
     coeff_h = np.polyfit(x_days, heart_rate, 3)
     trend_h = np.poly1d(coeff_h)(x_days)
-    plt.plot(date_objects, trend_h, color='green', linestyle='--', linewidth=2, alpha=0.9, label='心率趋势线')
-    
-    # 数据标注（和原代码一致）
+    plt.plot(date_objects, trend_h, color='green', linestyle='--', linewidth=2, alpha=0.9, label='Heart Rate Trend')
+
     for i, (x, y) in enumerate(zip(date_objects, systolic)):
         plt.annotate(f'{y:.1f}', (x, y), xytext=(0, 8), textcoords="offset points", ha='center', fontsize=7, color='red')
     for i, (x, y) in enumerate(zip(date_objects, diastolic)):
         plt.annotate(f'{y:.1f}', (x, y), xytext=(0, -12), textcoords="offset points", ha='center', fontsize=7, color='blue')
     for i, (x, y) in enumerate(zip(date_objects, heart_rate)):
         plt.annotate(f'{y:.1f}', (x, y), xytext=(8, 0), textcoords="offset points", ha='left', fontsize=7, color='green')
-    
-    # 标题和标签（自动更新时间范围）
-    start_date = date_objects[0].strftime('%Y年%m月%d日')
-    end_date = date_objects[-1].strftime('%Y年%m月%d日')
-    plt.title(f'血压与心率变化记录表（{start_date}-{end_date}）', fontsize=18, pad=20)
-    plt.xlabel('日期', fontsize=14)
-    plt.ylabel('数值', fontsize=14)
+
+    start_date = date_objects[0].strftime('%Y-%m-%d')
+    end_date = date_objects[-1].strftime('%Y-%m-%d')
+    plt.title(f'Blood Pressure & Heart Rate ({start_date} to {end_date})', fontsize=18, pad=20)
+    plt.xlabel('Date', fontsize=14)
+    plt.ylabel('Value', fontsize=14)
     plt.xticks(date_objects, [d.strftime('%Y-%m-%d') for d in date_objects], rotation=70, fontsize=8, ha='right')
     plt.legend(fontsize=13)
     plt.grid(True, linestyle='--', alpha=0.6)
     plt.tight_layout()
-    
-    # 在网页显示图表
+
     st.pyplot(plt)
-    
-    # 图表导出功能
-    st.subheader("💾 导出图表/数据")
-    # 导出图表为PNG
+
+    st.subheader("Export Data")
     buf = BytesIO()
     plt.savefig(buf, format='png', dpi=300, bbox_inches='tight', facecolor='white')
     buf.seek(0)
     st.download_button(
-        label="📥 下载高清图表（PNG）",
+        label="Download Chart (PNG)",
         data=buf,
-        file_name=f'血压心率趋势图_{start_date.replace("年","").replace("月","").replace("日","")}-{end_date.replace("年","").replace("月","").replace("日","")}.png',
+        file_name=f'bp_hr_chart_{start_date}-{end_date}.png',
         mime='image/png'
     )
-    # 导出合并后的数据为CSV
+
     csv_data = combined_df.to_csv(index=False, encoding='utf-8-sig')
     st.download_button(
-        label="📥 下载合并后的数据（CSV）",
+        label="Download Data (CSV)",
         data=csv_data,
-        file_name=f'血压心率数据_{start_date.replace("年","").replace("月","").replace("日","")}-{end_date.replace("年","").replace("月","").replace("日","")}.csv',
+        file_name=f'bp_hr_data_{start_date}-{end_date}.csv',
         mime='text/csv'
     )
