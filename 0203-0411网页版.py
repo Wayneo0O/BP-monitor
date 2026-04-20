@@ -124,7 +124,8 @@ with col_import:
                     new_data = df.to_dict('records')
                     st.session_state.new_data_list.extend(new_data)
                     st.success(f"✅ 成功导入 {len(new_data)} 条数据！")
-                    st.rerun()
+                    # 重新加载页面以显示导入的数据
+                    st.experimental_rerun()
                 else:
                     st.error("❌ 文件格式错误，请上传正确的CSV文件")
             else:
@@ -201,7 +202,9 @@ if st.session_state.new_data_list:
     )
     
     # 自动保存：将编辑后的数据更新到 session_state
-    st.session_state.new_data_list = edited_df.to_dict('records')
+    # 只有当用户实际编辑了数据时才更新
+    if len(edited_df) > 0:
+        st.session_state.new_data_list = edited_df.to_dict('records')
     
     col_del, col_clear = st.columns(2)
     with col_del:
