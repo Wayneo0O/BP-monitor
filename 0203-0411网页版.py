@@ -102,6 +102,8 @@ st.divider()
 # 初始化会话状态
 if 'new_data_list' not in st.session_state:
     st.session_state.new_data_list = []
+if 'file_uploaded' not in st.session_state:
+    st.session_state.file_uploaded = False
 
 # 1. 数据导入/导出功能
 st.subheader("💾 数据持久化")
@@ -109,7 +111,7 @@ col_import, col_export = st.columns(2)
 
 with col_import:
     uploaded_file = st.file_uploader("上传之前保存的新增数据（CSV格式）", type="csv")
-    if uploaded_file is not None:
+    if uploaded_file is not None and not st.session_state.file_uploaded:
         try:
             df = pd.read_csv(uploaded_file)
             if not df.empty:
@@ -124,14 +126,17 @@ with col_import:
                     new_data = df.to_dict('records')
                     st.session_state.new_data_list.extend(new_data)
                     st.success(f"✅ 成功导入 {len(new_data)} 条数据！")
-                    # 不再使用 st.rerun()，避免无限循环
-                    # 数据会在页面刷新时自动显示
+                    # 标记文件已处理，防止重复导入
+                    st.session_state.file_uploaded = True
                 else:
                     st.error("❌ 文件格式错误，请上传正确的CSV文件")
             else:
                 st.error("❌ 上传的文件为空")
         except Exception as e:
             st.error(f"❌ 导入失败：{str(e)}")
+    elif uploaded_file is None:
+        # 当没有文件上传时，重置标记
+        st.session_state.file_uploaded = False
 
 with col_export:
     if st.session_state.new_data_list:
